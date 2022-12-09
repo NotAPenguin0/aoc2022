@@ -16,10 +16,10 @@ oneContains :: (Interval -> Interval -> Bool) -> Interval -> Interval -> Bool
 oneContains f x y = (uncurry (||)) $ (applyTuple2 (f) (flip f) x y)
 
 part1 :: [(Interval, Interval)] -> Int
-part1 = length . filter (uncurry $ (oneContains contains))
+part1 = length . filter (uncurry (oneContains contains))
 
 part2 :: [(Interval, Interval)] -> Int
-part2 = length . filter (uncurry $ (oneContains partialContains))
+part2 = length . filter (uncurry (oneContains partialContains))
 
 parse :: String -> [(Interval, Interval)]
 parse = (map . mapTuple) 
