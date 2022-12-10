@@ -66,7 +66,6 @@ moveTails (h:t:ts) = movedTail:(moveTails (movedTail:ts))
     where 
         movedTail = moveTail h t
 
-
 simulateStep' :: S.Set Pos -> Pos -> [Pos] -> Instruction -> (Pos, [Pos], S.Set Pos)
 simulateStep' visited h t (Instruction _ 0) = (h, t, visited)
 simulateStep' visited h ts (Instruction dir n) 
@@ -75,7 +74,6 @@ simulateStep' visited h ts (Instruction dir n)
         newHead = moveHead h dir
         newTails = moveTails (newHead:ts)
         newVisited = S.insert (last newTails) visited
-
 
 simulate' :: S.Set Pos -> Pos -> [Pos] -> [Instruction] -> S.Set Pos
 simulate' visited _ _ [] = visited
