@@ -33,7 +33,12 @@ renderChar False = ' '
 
 -- one string for each row on the CRT, we can render manually from there
 part2 :: [Instruction] -> [String]
-part2 = map (++"\n") . chunksOf 40 . map (renderChar . uncurry isCovered) . zip [1..240] . simulate 1
+part2 = 
+    map (++"\n") 
+    . chunksOf 40 
+    . map (renderChar . uncurry isCovered) 
+    . zip [1..240] 
+    . simulate 1
 
 readInstr :: [String] -> Instruction
 readInstr ("noop":[]) = Noop
