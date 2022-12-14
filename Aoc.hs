@@ -29,3 +29,7 @@ replace _ _ [] = []
 replace a b (x:xs)
     | x == a = (b:replace a b xs)
     | otherwise = (x:replace a b xs)
+
+
+zip2D :: [[a]] -> [[b]] -> [[(a, b)]]
+zip2D = zipWith zip

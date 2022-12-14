@@ -65,11 +65,9 @@ parse :: String -> [(NestedList Int, NestedList Int)]
 parse = map (first2 . map (readNestedList) . splitOn "\n")  
         . splitOn "\n\n"
 
-
 parse2 :: String -> [NestedList Int]
 parse2 = concat . map (map (readNestedList) . splitOn "\n")  
         . splitOn "\n\n"
-
 
 main :: IO ()
 main = openFile "input/day13.txt" ReadMode 
