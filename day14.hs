@@ -86,85 +86,6 @@ dropSandWhile spawnX tiles
 part1 :: [[Tile]] -> Int -> Int
 part1 tiles sandX = dropSandWhile sandX tiles
 
-evens :: [Int] 
-evens = map (*2) [0..]
-
-odds :: [Int]
-odds = map (+1) evens
-
-pyramidBase :: Int -> Int
-pyramidBase levels = (odds !! (levels-1))
-
--- our pyramid is centered around the spawn X coordinate
-
-pyramid :: Int -> Int
-pyramid 1 = 1
-pyramid base = base + (pyramid (base - 2))
-
-cappedPyramid :: Int -> Int -> Int
-cappedPyramid base cap = (pyramid base) - (pyramid cap)
-
-countRock :: [[Tile]] -> Int
-countRock = length . filter (==Rock) . concat
-
-getTileNeighbours :: [[Tile]] -> (Int, Int) -> [(Int, Int)]
-getTileNeighbours tiles pos@(x, y)
-    | y == 0 = []
-    | x == 0 = (x-1, y-1):(filterAir [(x, y-1), (x+1, y-1)])
-    | x == -1 = (x, y-1):(filterAir [(x+1, y-1)])
-    | x == (maxX) = (x, y-1):(filterAir [(x-1, y-1)])
-    | x == (maxX-1) = (x+1, y-1):(filterAir [(x, y-1), (x-1, y-1)])
-    | otherwise = filterAir [(x, y-1), (x+1, y-1), (x-1, y-1)]
-    where
-        filterAir = filter ((==Air) . (flip $ uncurry getTile) tiles)
-        maxX = length $ head tiles
-
-airHasPath :: [(Int, Int)] -> [[Tile]] -> (Int, Int) -> (Int, Int) -> Bool
-airHasPath nodes tilesExp spawn air = Dijkstra.hasPath air spawn pathMap
-    where
-        pathMap = Dijkstra.dijkstra (getTileNeighbours tilesExp) air spawn nodes
-
-{-part2 :: [[Tile]] -> Int -> Int
-part2 tiles sandX = numAirLeft
-    -- dropping sand, part 2.
-    -- in this case, we drop N full layers of sand in a pyramid shape, minus the contained blocks, minus the air gaps.
-    -- we drop maxY+1 pyramid layers.
-    where
-        maxY = length tiles
-        maxX = length $ head tiles
-        sandPyramid = pyramid $ pyramidBase (maxY+1)
-        -- 1. count rock inside the pyramid and remove it from the count
-        rockTiles = countRock tiles
-
-        -- 2. for each horizontal layer of rock at level y with width W
-        --      there will be an upside down pyramid of air with base length (W-2)
-        --      note that this pyramid is capped at the floor level (maxY+1)
-        -- NOTE: this will remove the rock inside the upside down pyramids too!
-        -- Solution: DELETE all rock inside pyramids, work top down.
-        -- This means we have to count the rock tiles AFTER counting air pyramids.
-
-        -- New idea:
-        -- 1. Initial solution = full pyramid
-        -- 2. Remove all rocks
-        -- 3. From each air tile, do a BFS/dijkstra to the start, to see if it is reachable.
-        --      we might be able to reuse our old dijkstra for this!
-        -- 4. Solution minus one for each air tile with no path
-        
-        -- For our search to work properly, we need to expand the grid by one
-        -- tile, to allow for pathing outside the initial grid.
-        tiles' = tiles ++ [replicate (maxX) Air]
-        dijkstraNodes = [(x, y) | x <- [0..(maxX+1)], y <- [0..(maxY+1)]]
-        -- Compute path from end point (the sand spawn locaation) to a "good" initial start position
-        -- One such good location is the bottom left corner, as it always has a path
-        end = (sandX+1, 0) -- +1 because we shifted all coordinates by adding the extra nodes on the edges
-        start = (0, maxY+1)
-        pathMap = Dijkstra.dijkstra (getTileNeighbours tiles') start end dijkstraNodes
-        -- take all air blocks, check if they have a path, and filter
-        allAirCoords = filter ((==Air) . (flip $ uncurry getTile) tiles) [(x, y) | x <- [0..(maxX-1)], y <- [0..(maxY-1)]]
-        -- numAirLeft = length $ filter (airHasPath dijkstraNodes expandedTiles end) allAirCoords
-        numAirLeft = length $ filter (\s@(x, y) -> Dijkstra.hasPath (x+1,y) end pathMap) allAirCoords
--}
-
 type Cave = M.Map (Int, Int) Tile
 
 setTile2 :: Int -> Int -> Tile -> Cave -> Cave
@@ -172,47 +93,6 @@ setTile2 x y tile tiles = M.alter (const $ Just tile) (x, y) tiles
 
 getTile2 :: Int -> Int -> Cave -> Tile
 getTile2 x y tiles = M.findWithDefault Air (x, y) tiles
-
-belowBlocked2 :: (Int, Int) -> Cave -> Bool
-belowBlocked2 (x, y) tiles = Air /= getTile2 x (y+1) tiles
-
-rightBelowBlocked2 :: (Int, Int) -> Cave-> Bool
-rightBelowBlocked2 (x, y) tiles = Air /= getTile2 (x+1) (y+1) tiles
-
-leftBelowBlocked2 :: (Int, Int) -> Cave -> Bool
-leftBelowBlocked2 (x, y) tiles = Air /= getTile2 (x-1) (y+1) tiles
-
-isBlocked2 :: (Int, Int) -> Cave -> Bool
-isBlocked2 pos tiles = belowBlocked2 pos tiles && leftBelowBlocked2 pos tiles && rightBelowBlocked2 pos tiles
-
-moveSand2 :: (Int, Int) -> Cave -> (Int, Int)
-moveSand2 pos@(x, y) tiles 
-    | not $ belowBlocked2 pos tiles = (x, y+1)
-    | not $ leftBelowBlocked2 pos tiles = (x-1, y+1)
-    | not $ rightBelowBlocked2 pos tiles = (x+1, y+1) 
-    | otherwise = error "!"
-
-onFloor :: Int -> (Int, Int) -> Bool
-onFloor floorLvl pos@(x, y) = y == floorLvl
-
-dropSand2' :: Int -> (Int, Int) -> Cave -> [(Int, Int)]
-dropSand2' floorLvl pos@(x, y) tiles 
-    | onFloor floorLvl pos = [pos] -- on the floor, we do nothing
-    | isBlocked2 pos tiles = [pos] -- blocked, do nothing
-    | otherwise = pos:(dropSand2' floorLvl (moveSand2 pos tiles) tiles) -- update, then move again
-
-dropSand2 :: Int -> Int -> Cave -> [(Int, Int)]
-dropSand2 sandX floorLvl tiles = dropSand2' floorLvl (sandX, 0) tiles
-
-setDroppedSand2 :: (Int, Int) -> Cave -> Cave
-setDroppedSand2 (x, y) tiles = setTile2 x y Sand tiles
-
--- We keep a list of 'history' of the sand.
--- this means, the full path the previous piece of sand took.
-
--- if we have the history, then the next drop location defined by:
--- finding the first non-blocked tile in the history (backwards, from end tile)
--- taking the best available step there
 
 -- sand[x, y] = 1 + sand[x, y + 1] + sand [x - 1, y + 1] + sand[x + 1, y + 1]
 
@@ -227,34 +107,6 @@ sand cave pos@(x, y)
             (cave'', down) = sand cave' (x, y + 1)
             (cave''', left) = sand cave'' (x - 1, y + 1)
             (cave'''', right) = sand cave''' (x + 1, y + 1)
-
-continueFromHistory :: [(Int, Int)] -> Int -> Int -> Cave -> (Cave, Int)
-continueFromHistory [] _ _ tiles = (tiles, 0) -- no more unblocked tiles starting from the previous tile, we are done!
-continueFromHistory (h:history) spawnX floorLvl tiles = (newTiles', n + 1)
-    where 
-        -- 'h' has the previous unblocked tile.
-        -- we try to move from there
-        newHistory = dropSand2' floorLvl h tiles
-        newSand@(x,y) = last newHistory 
-        !_ = trace ("Found new sand: " ++ show (x,y)) $ newSand
-        newTiles = setDroppedSand2 newSand tiles
-        (newTiles', n) = dropSandWhile2' (reverse $ history ++ [newSand] ++ (reverse newHistory)) spawnX floorLvl newTiles
-
-
-dropSandWhile2' :: [(Int, Int)] -> Int -> Int -> Cave -> (Cave, Int)
-dropSandWhile2' history spawnX floorLvl tiles = continueFromHistory dropBlocked spawnX floorLvl tiles
-    where 
-        revHistory = reverse history
-        dropBlocked = dropWhile (\p -> onFloor floorLvl p || isBlocked2 p tiles) revHistory
-
-
-dropSandWhile2 :: Int -> Int -> Cave -> (Cave, Int)
-dropSandWhile2 spawnX floorLvl tiles = (newTiles', n) -- we did one drop here, so increment one
-    where
-        dropHistory = dropSand2 floorLvl spawnX tiles
-        drop = trace (show dropHistory) $ last dropHistory
-        newTiles = setDroppedSand2 drop tiles
-        (newTiles', n) = dropSandWhile2' dropHistory spawnX floorLvl newTiles
 
 part2 :: [[Tile]] -> Int -> Int
 part2 tiles sandX = snd $ sand tileMap' (sandX, 0)
